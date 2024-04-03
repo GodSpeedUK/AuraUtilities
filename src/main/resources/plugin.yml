@@ -1,0 +1,4 @@
+name: AuraUtilities
+version: '${project.version}'
+main: tech.aurasoftware.aurautilities.AuraUtilities
+api-version: '1.20'
