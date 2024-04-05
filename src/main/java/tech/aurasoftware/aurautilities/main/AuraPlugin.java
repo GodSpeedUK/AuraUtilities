@@ -29,7 +29,6 @@ public abstract class AuraPlugin extends JavaPlugin {
 
     public void registerCommands(AuraCommand... commands){
         try {
-            System.out.println("Registering commands");
             final Field bukkitCommandMap = Bukkit.getServer().getClass().getDeclaredField("commandMap");
             bukkitCommandMap.setAccessible(true);
             CommandMap commandMap = (CommandMap) bukkitCommandMap.get(Bukkit.getServer());

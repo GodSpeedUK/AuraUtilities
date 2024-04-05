@@ -2,9 +2,7 @@ package tech.aurasoftware.aurautilities.command;
 
 import lombok.Getter;
 import lombok.Setter;
-import tech.aurasoftware.aurautilities.command.annotation.Alias;
-import tech.aurasoftware.aurautilities.command.annotation.Permission;
-import tech.aurasoftware.aurautilities.command.annotation.Usage;
+import tech.aurasoftware.aurautilities.command.annotation.*;
 
 import java.lang.reflect.Constructor;
 import java.util.Arrays;
@@ -20,6 +18,10 @@ public abstract class AuraSubCommand implements AuraCommandFrame{
     private String permission;
 
     private List<String> aliases;
+    private boolean requiresPlayer = false;
+
+    private Class<?>[] parameters = new Class<?>[0];
+    private boolean[] optional = new boolean[0];
 
 
 
@@ -34,15 +36,26 @@ public abstract class AuraSubCommand implements AuraCommandFrame{
         }
         if (constructor.isAnnotationPresent(Alias.class)) {
             Alias alias = constructor.getAnnotation(Alias.class);
-            setAliases(Arrays.asList(alias.value()));
+            this.setAliases(Arrays.asList(alias.value()));
         }
         if (constructor.isAnnotationPresent(Usage.class)) {
             Usage usage = constructor.getAnnotation(Usage.class);
-            setUsage(usage.value());
+            this.usage = usage.value();
         }
+
         if (constructor.isAnnotationPresent(Permission.class)) {
             Permission permission = constructor.getAnnotation(Permission.class);
-            setPermission(permission.value());
+            this.permission = permission.value();
+        }
+
+        if(constructor.isAnnotationPresent(RequiresPlayer.class)){
+            this.requiresPlayer = true;
+        }
+
+        if(constructor.isAnnotationPresent(Parameters.class)){
+            Parameters parameters = constructor.getAnnotation(Parameters.class);
+            this.parameters = parameters.value();
+            this.optional = parameters.optional();
         }
     }
 }

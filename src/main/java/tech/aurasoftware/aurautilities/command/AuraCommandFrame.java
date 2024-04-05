@@ -12,6 +12,12 @@ import java.util.Collection;
 
 
 public interface AuraCommandFrame {
+
+    Class<?>[] getParameters();
+
+
+    boolean[] getOptional();
+
     boolean run(CommandSender commandSender, String[] args);
 
 

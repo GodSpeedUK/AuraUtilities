@@ -2,6 +2,8 @@ package tech.aurasoftware.aurautilities.command.parameter;
 
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 public abstract class Parameter<T> {
 
@@ -18,6 +20,8 @@ public abstract class Parameter<T> {
         }
         return parse(string) != null;
     }
+
+    public abstract List<String> tabComplete();
 
 //    public boolean handleNotParsable(LibCommandSender libCommandSender, LibCommandFrame libCommandFrame, String arg){
 //        if(arg == null){

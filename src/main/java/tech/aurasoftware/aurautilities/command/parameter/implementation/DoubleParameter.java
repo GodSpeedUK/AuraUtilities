@@ -3,6 +3,9 @@ package tech.aurasoftware.aurautilities.command.parameter.implementation;
 
 import tech.aurasoftware.aurautilities.command.parameter.Parameter;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class DoubleParameter extends Parameter<Double> {
 
     public DoubleParameter() {
@@ -22,6 +25,11 @@ public class DoubleParameter extends Parameter<Double> {
             return null;
         }
 
+    }
+
+    @Override
+    public List<String> tabComplete() {
+        return Arrays.asList("1.0", "2.0", "4.0", "8.0", "16.0", "32.0", "64.0");
     }
 
 

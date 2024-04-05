@@ -3,6 +3,9 @@ package tech.aurasoftware.aurautilities.command.parameter.implementation;
 
 import tech.aurasoftware.aurautilities.command.parameter.Parameter;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class IntegerParameter extends Parameter<Integer> {
     public IntegerParameter() {
         super(Integer.class);
@@ -21,6 +24,11 @@ public class IntegerParameter extends Parameter<Integer> {
             return null;
         }
 
+    }
+
+    @Override
+    public List<String> tabComplete() {
+        return Arrays.asList("1", "2", "4", "8", "16", "32", "64");
     }
 
 }

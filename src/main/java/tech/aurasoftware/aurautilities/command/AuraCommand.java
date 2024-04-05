@@ -10,6 +10,7 @@ import tech.aurasoftware.aurautilities.command.annotation.*;
 import tech.aurasoftware.aurautilities.command.parameter.Parameter;
 import tech.aurasoftware.aurautilities.message.UtilityMessages;
 import tech.aurasoftware.aurautilities.util.Placeholder;
+import tech.aurasoftware.aurautilities.util.Util;
 
 
 import java.lang.annotation.Annotation;
@@ -28,6 +29,9 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
 
     private String usage;
     private String permission;
+    private boolean requiresPlayer = false;
+    private Class<?>[] parameters = new Class<?>[0];
+    private boolean[] optional = new boolean[0];
 
     public AuraCommand(String name) {
         super(name);
@@ -53,6 +57,16 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
         if (constructor.isAnnotationPresent(Permission.class)) {
             Permission permission = constructor.getAnnotation(Permission.class);
             this.permission = permission.value();
+        }
+
+        if (constructor.isAnnotationPresent(RequiresPlayer.class)) {
+            this.requiresPlayer = true;
+        }
+
+        if (constructor.isAnnotationPresent(Parameters.class)) {
+            Parameters parameters = constructor.getAnnotation(Parameters.class);
+            this.parameters = parameters.value();
+            this.optional = parameters.optional();
         }
 
     }
@@ -102,50 +116,84 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
             return true;
         }
 
-        if (runMethod.isAnnotationPresent(RequiresPlayer.class)) {
-            if (!(commandSender instanceof Player)) {
-                UtilityMessages.INVALID_SENDER.send(commandSender);
+        if (this.requiresPlayer && !(commandSender instanceof Player)) {
+            UtilityMessages.INVALID_SENDER.send(commandSender);
+            return true;
+        }
+
+        for (int i = 0; i < parameters.length; i++) {
+
+            boolean optional = this.optional[i];
+            Class<?> parameterClass = parameters[i];
+
+            if (strings.length <= i && !optional) {
+                UtilityMessages.INVALID_USAGE.send(commandSender, new Placeholder("{usage}", this.usage));
                 return true;
             }
-        }
-        if (runMethod.isAnnotationPresent(Parameters.class)) {
-            Parameters parameters = runMethod.getAnnotation(Parameters.class);
-            int requiredLength = parameters.value().length;
 
-            if (parameters.index().length != requiredLength || parameters.optional().length != requiredLength) {
-                UtilityMessages.INVALID_USAGE.send(commandSender, new Placeholder("{usage}", this.getUsage()));
+            if (strings.length <= i) {
+                continue;
+            }
+
+            String arg = strings[i];
+
+            Parameter<?> parameter = AuraUtilities.getInstance().getParameterManager().get(parameterClass);
+
+            if(!parameter.isParsable(arg)){
+                UtilityMessages.INVALID_USAGE.send(commandSender, new Placeholder("{usage}", this.usage));
                 return true;
             }
 
-            for (int i = 0; i < requiredLength; i++) {
-                int parameterIndex = parameters.index()[i];
-                boolean optional = parameters.optional()[i];
-                Class<?> parameterType = parameters.value()[i];
-
-                String argument;
-
-                try {
-                    argument = strings[parameterIndex];
-                } catch (ArrayIndexOutOfBoundsException e) {
-                    if (!optional) {
-                        UtilityMessages.INVALID_USAGE.send(commandSender, new Placeholder("{usage}", this.getUsage()));
-                        return true;
-                    }
-                    continue;
-                }
-
-                Parameter<?> parameter = AuraUtilities.getInstance().getParameterManager().get(parameterType);
-
-                if (parameter == null || !parameter.isParsable(argument)) {
-                    UtilityMessages.INVALID_USAGE.send(commandSender, new Placeholder("{usage}", this.getUsage()));
-                    return true;
-                }
-            }
         }
+
 
         return auraCommandFrame.run(commandSender, strings);
     }
 
+    @Override
+    public List<String> tabComplete(@NotNull CommandSender sender, @NotNull String alias, @NotNull String[] args) throws IllegalArgumentException {
+
+        List<String> completions = new ArrayList<>();
+
+        AuraCommandFrame completeFrom = this;
+        int indexShift = 0;
+
+        if (args.length > 0) {
+            if (!getAuraSubCommands().isEmpty()) {
+                if (args.length == 1) {
+                    for (AuraSubCommand auraSubCommand : getAuraSubCommands()) {
+                        completions.add(auraSubCommand.getName());
+                        completions.addAll(auraSubCommand.getAliases());
+                    }
+                    return completions;
+                }
+                for (AuraSubCommand auraSubCommand : getAuraSubCommands()) {
+                    if (auraSubCommand.getName().equalsIgnoreCase(args[0]) || auraSubCommand.getAliases().contains(args[0])) {
+                        completeFrom = auraSubCommand;
+                        indexShift = 1;
+                        break;
+                    }
+                }
+            }
+        }
+
+        int index = args.length - indexShift -1;
+
+        if (completeFrom.getParameters().length <= index) {
+            return super.tabComplete(sender, alias, args);
+        }
+
+        Class<?> parameterClass = completeFrom.getParameters()[index];
+
+        Parameter<?> parameter = AuraUtilities.getInstance().getParameterManager().get(parameterClass);
+
+        if (parameter == null) {
+            return super.tabComplete(sender, alias, args);
+        }
+
+
+        return parameter.tabComplete();
+    }
 }
 
 
