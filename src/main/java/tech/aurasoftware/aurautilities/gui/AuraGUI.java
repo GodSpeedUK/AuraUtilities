@@ -7,8 +7,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.inventory.Inventory;
 import org.jetbrains.annotations.NotNull;
 import tech.aurasoftware.aurautilities.configuration.serialization.Serializable;
+import tech.aurasoftware.aurautilities.util.Placeholder;
 import tech.aurasoftware.aurautilities.util.Text;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -18,7 +20,7 @@ public class AuraGUI implements Serializable, Cloneable {
     private String id;
     private String name;
     private int size;
-    private List<AuraGUIItem> items;
+    private List<AuraGUIItem> items = new ArrayList<>();
 
     public AuraGUI id(String id){
         this.id = id;
@@ -51,16 +53,23 @@ public class AuraGUI implements Serializable, Cloneable {
                 .items(items);
     }
 
-    public Inventory createInventory(AuraGUIItem... additionalItems){
+    public Inventory createInventory(List<Placeholder> placeholderList, AuraGUIItem... additionalItems){
 
-        Inventory inventory = Bukkit.createInventory(null, size, Text.c(name));
+        Placeholder[] placeholders = placeholderList.toArray(new Placeholder[0]);
+
+        Inventory inventory = Bukkit.createInventory(null, size, Text.c(Placeholder.apply(name, placeholders)));
 
         for(AuraGUIItem auraGUIItem : items){
-            inventory.setItem(auraGUIItem.getSlot(), auraGUIItem.getAuraItem().toBukkitItem());
+            for(int slot: auraGUIItem.getSlots()){
+                inventory.setItem(slot, auraGUIItem.getAuraItem().toBukkitItem(placeholders));
+            }
+
         }
 
         for(AuraGUIItem auraGUIItem : additionalItems){
-            inventory.setItem(auraGUIItem.getSlot(), auraGUIItem.getAuraItem().toBukkitItem());
+            for (int slot : auraGUIItem.getSlots()) {
+                inventory.setItem(slot, auraGUIItem.getAuraItem().toBukkitItem(placeholders));
+            }
         }
 
         return inventory;

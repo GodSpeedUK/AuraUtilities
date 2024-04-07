@@ -5,11 +5,17 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.dbcp.BasicDataSource;
 import tech.aurasoftware.aurautilities.configuration.serialization.Serializable;
 import tech.aurasoftware.aurautilities.configuration.serialization.annotation.Ignored;
+import tech.aurasoftware.aurautilities.util.Schedulers;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @NoArgsConstructor
@@ -56,16 +62,15 @@ public class SQLDatabase implements Serializable {
         return this;
     }
 
-    public void createDataSource(){
+    public void createDataSource() {
         BasicDataSource dataSource = new BasicDataSource();
         String url = "jdbc:mysql://" + host + ":" + port + "/" + database;
         dataSource.setUrl(url);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
 
-        dataSource.setMinIdle(5);
-        dataSource.setMaxIdle(10);
-
+        dataSource.setMinIdle(10);
+        dataSource.setTestOnBorrow(false);
 
         this.dataSource = dataSource;
     }
@@ -79,8 +84,8 @@ public class SQLDatabase implements Serializable {
         }
     }
 
-    public void closeDataSource(){
-        if(dataSource instanceof BasicDataSource){
+    public void closeDataSource() {
+        if (dataSource instanceof BasicDataSource) {
             try {
                 ((BasicDataSource) dataSource).close();
             } catch (Exception e) {
@@ -89,47 +94,64 @@ public class SQLDatabase implements Serializable {
         }
     }
 
-    public CompletableFuture<ResultSet> query(String query, Object... wildcards){
-        return CompletableFuture.supplyAsync(() -> {
-            try(Connection connection = getConnection()){
-                if(connection == null){
-                    return null;
-                }
-                PreparedStatement preparedStatement = connection.prepareStatement(query);
-                for(int i = 0; i < wildcards.length; i++){
-                    preparedStatement.setObject(i + 1, wildcards[i]);
-                }
-                ResultSet resultSet = preparedStatement.executeQuery();
-                connection.close();
-                return resultSet;
-            }catch (Exception e){
-                e.printStackTrace();
-                return null;
+
+    public SQLResponse querySync(String query, Object... values) {
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+
+            for (int i = 0; i < values.length; i++) {
+                statement.setObject(i + 1, values[i]);
             }
-        });
+
+            ResultSet resultSet = statement.executeQuery();
+            ResultSetMetaData metaData = resultSet.getMetaData();
+
+            SQLResponse response = new SQLResponse();
+
+            int index = 0;
+            while (resultSet.next()) {
+                SQLRow row = new SQLRow();
+                for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                    SQLColumn column = new SQLColumn(metaData.getColumnName(i), resultSet.getObject(i));
+                    row.addColumn(metaData.getColumnName(i), column);
+                }
+                response.addRow(index, row);
+                index++;
+            }
+
+            connection.close();
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
-    public CompletableFuture<Boolean> queryUpdate(String query, Object... wildcards){
-        return CompletableFuture.supplyAsync(() -> {
-            try(Connection connection = getConnection()){
-                if(connection == null){
-                    return false;
-                }
-                PreparedStatement preparedStatement = connection.prepareStatement(query);
-                for(int i = 0; i < wildcards.length; i++){
-                    preparedStatement.setObject(i + 1, wildcards[i]);
-                }
-                boolean result = preparedStatement.execute();
-                preparedStatement.close();
-                connection.close();
-                return result;
-            }catch (Exception e){
-                e.printStackTrace();
-                return false;
-            }
-        });
+    public CompletableFuture<SQLResponse> query(String query, Object... values) {
+        return CompletableFuture.supplyAsync(() -> querySync(query, values));
     }
 
+    public void updateSync(String query, Object... values) {
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
 
+            for (int i = 0; i < values.length; i++) {
+                statement.setObject(i + 1, values[i]);
+            }
+
+            statement.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public CompletableFuture<Void> update(String query, Object... values) {
+        return CompletableFuture.supplyAsync(() -> {
+            updateSync(query, values);
+            return null;
+        });
+    }
 
 }

@@ -5,6 +5,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import tech.aurasoftware.aurautilities.configuration.serialization.Serializable;
 import tech.aurasoftware.aurautilities.configuration.serialization.Serialization;
 import tech.aurasoftware.aurautilities.file.YamlFile;
+import tech.aurasoftware.aurautilities.gui.AuraGUI;
 import tech.aurasoftware.aurautilities.item.AuraItem;
 
 import java.util.ArrayList;
@@ -122,6 +123,9 @@ public interface Configuration {
         return (AuraItem) getValue();
     }
 
+    default AuraGUI getAuraGUI(){
+        return (AuraGUI) getValue();
+    }
     default void saveValue(YamlFile yamlFile) {
         if (getValue() instanceof Serializable) {
             Serializable serializable = (Serializable) getValue();

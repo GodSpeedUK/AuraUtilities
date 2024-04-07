@@ -15,7 +15,7 @@ import java.util.*;
 public class Serialization {
 
 
-    private static final List<String> PRIMATIVE_TYPES = Arrays.asList("int", "double", "float", "long", "boolean", "String");
+    private static final List<String> PRIMATIVE_TYPES = Arrays.asList("int", "double", "float", "long", "boolean", "java.lang.String", "java.lang.Integer", "java.lang.Boolean", "java.lang.Double", "java.lang.Float", "java.lang.Long");
 
     public static final List<Class<? extends Serializable>> CONFIG_MAP = new ArrayList<>();
 
@@ -24,6 +24,7 @@ public class Serialization {
             return;
         }
         CONFIG_MAP.add(clazz);
+
     }
 
     public static Class<? extends Serializable> getSerializableClass(Serializable configItem) {
@@ -67,56 +68,50 @@ public class Serialization {
             return null;
         }
 
-
-
-        for(Field field: obj.getClass().getDeclaredFields()){
+        for(Field field: obj.getClass().getDeclaredFields()) {
             field.setAccessible(true);
-            if(field.isAnnotationPresent(Ignored.class)){
+            if (field.isAnnotationPresent(Ignored.class)) {
                 continue;
             }
 
-            // Check if field is serializable
-            if(field.getType().isAssignableFrom(Serializable.class)){
+            if(field.get(obj) == null){
+                continue;
+            }
 
+            String typeString = field.getType().getName();
+            if(PRIMATIVE_TYPES.contains(typeString)){
+                map.put(field.getName(), field.get(obj));
+                continue;
+            }
+
+            Class<?> type = Class.forName(typeString);
+            if(CONFIG_MAP.contains(type)){
                 Map<String, Object> serialized = Serialization.serialize(field.get(obj));
-
                 for(String key: serialized.keySet()){
                     map.put(field.getName() + "." + key, serialized.get(key));
                 }
                 continue;
             }
 
-            // Check if field is a list
             if(field.getType().isAssignableFrom(List.class)){
-                // Check if List type is serializable
-                List<Object> list = (List<Object>) field.get(obj);
-
-
-                if(list.isEmpty()){
+                List<?> list = (List<?>) field.get(obj);
+                if(list == null || list.isEmpty()){
                     continue;
                 }
 
-                if(list.get(0) instanceof Serializable){
+                if(PRIMATIVE_TYPES.contains(list.get(0).getClass().getName())){
+                    map.put(field.getName(), list);
+                    continue;
+                }
+
+                if(CONFIG_MAP.contains(list.get(0).getClass())){
                     for(int i = 0; i < list.size(); i++){
                         Map<String, Object> serialized = Serialization.serialize(list.get(i));
-
                         for(String key: serialized.keySet()){
                             map.put(field.getName() + "." + i + "." + key, serialized.get(key));
                         }
                     }
-                    continue;
                 }
-
-                String type = list.get(0).getClass().getName();
-
-                if(PRIMATIVE_TYPES.contains(type)){
-                    map.put(field.getName(), list);
-                }
-
-            }
-
-            if(isInitialized(field, obj)){
-                map.put(field.getName(), field.get(obj));
             }
 
         }
@@ -133,32 +128,43 @@ public class Serialization {
                 continue;
             }
 
-            if(field.getType().isAssignableFrom(Serializable.class)){
-                field.set(obj, Serialization.deserialize((Class<? extends Serializable>) field.getType(), config, key + "." + field.getName()));
+            String type = field.getType().getName();
+            if(PRIMATIVE_TYPES.contains(type)){
+                if(config.contains(key + "." + field.getName())){
+                    field.set(obj, config.get(key + "." + field.getName()));
+                }
+                continue;
+            }
+            Class<?> fieldClass = Class.forName(field.getType().getName());
+            // Check if field is serializable
+            if(CONFIG_MAP.contains(fieldClass)){
+                field.set(obj, Serialization.deserialize(fieldClass, config, key + "." + field.getName()));
                 continue;
             }
 
             if(field.getType().isAssignableFrom(List.class)){
-                String type = field.getGenericType().getTypeName().split("<")[1].split(">")[0];
+                String listType = field.getGenericType().getTypeName().split("<")[1].split(">")[0];
 
-                if(PRIMATIVE_TYPES.contains(type)){
-
-                    List<?> list = config.getList(key + "." + field.getName());
-                    field.set(obj, list);
+                if(PRIMATIVE_TYPES.contains(listType)){
+                    if(config.contains(key + "." + field.getName())){
+                        field.set(obj,  config.get(key + "." + field.getName()));
+                    }
                     continue;
                 }
 
-                if(CONFIG_MAP.contains(Class.forName(type))){
+                if(CONFIG_MAP.contains(Class.forName(listType))){
                     List<Object> list = new ArrayList<>();
                     for(String listKey: config.getConfigurationSection(key + "." + field.getName()).getKeys(false)){
-                        list.add(Serialization.deserialize(Class.forName(type), config, key + "." + field.getName() + "." + listKey));
+                        list.add(Serialization.deserialize(Class.forName(listType), config, key + "." + field.getName() + "." + listKey));
                     }
                     field.set(obj, list);
                     continue;
                 }
-            }
-            if(config.contains(key + "." + field.getName())){
-                field.set(obj, config.get(key + "." + field.getName()));
+
+                if(config.contains(key + "." + field.getName())){
+                    field.set(obj, config.get(key + "." + field.getName()));
+                }
+
             }
         }
         return obj;
@@ -179,7 +185,7 @@ public class Serialization {
                 case "boolean":
                     return field.getBoolean(obj);
                 default:
-                    return field.get(obj) != null;
+                    return false;
             }
         } catch (IllegalAccessException e) {
             e.printStackTrace();

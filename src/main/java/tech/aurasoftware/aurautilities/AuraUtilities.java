@@ -5,6 +5,8 @@ import tech.aurasoftware.aurautilities.command.parameter.ParameterManager;
 import tech.aurasoftware.aurautilities.command.parameter.implementation.*;
 import tech.aurasoftware.aurautilities.configuration.Configuration;
 import tech.aurasoftware.aurautilities.file.YamlFile;
+import tech.aurasoftware.aurautilities.gui.AuraGUI;
+import tech.aurasoftware.aurautilities.gui.AuraGUIItem;
 import tech.aurasoftware.aurautilities.gui.listener.InventoryClickListener;
 import tech.aurasoftware.aurautilities.gui.listener.InventoryCloseListener;
 import tech.aurasoftware.aurautilities.item.AuraItem;
@@ -32,7 +34,7 @@ public final class AuraUtilities extends AuraPlugin {
                 new PlayerParameter(),
                 new StringParameter()
         );
-        registerSerializables(TitleMessage.class, AuraItem.class);
+        registerSerializables(TitleMessage.class, AuraItem.class, AuraGUIItem.class, AuraGUI.class);
         registerListener(new InventoryClickListener(), new InventoryCloseListener());
         Configuration.loadConfig(new YamlFile("messages.yml", this.getDataFolder().getAbsolutePath(), null, this), UtilityMessages.values());
     }

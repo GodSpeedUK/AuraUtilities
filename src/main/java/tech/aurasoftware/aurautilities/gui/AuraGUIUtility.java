@@ -2,8 +2,11 @@ package tech.aurasoftware.aurautilities.gui;
 
 import lombok.experimental.UtilityClass;
 import org.bukkit.entity.Player;
+import tech.aurasoftware.aurautilities.gui.listener.AuraGUIMetaData;
+import tech.aurasoftware.aurautilities.util.Placeholder;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -12,10 +15,10 @@ public class AuraGUIUtility {
 
     private static final Map<UUID, OpenedAuraGUI> OPENED_GUI = new HashMap<>();
 
-    public void openGUI(Player player, AuraGUI auraGUI, AuraGUIItem... additionalItems){
-        player.openInventory(auraGUI.createInventory(additionalItems));
+    public void openGUI(Player player, AuraGUI auraGUI, List<Placeholder> placeholderList, AuraGUIMetaData auraGUIMetaData, AuraGUIItem... additionalItems){
+        player.openInventory(auraGUI.createInventory(placeholderList, additionalItems));
 
-        OpenedAuraGUI openedAuraGUI = new OpenedAuraGUI(auraGUI);
+        OpenedAuraGUI openedAuraGUI = new OpenedAuraGUI(auraGUI, auraGUIMetaData);
         openedAuraGUI.addAdditionalItems(additionalItems);
 
         OPENED_GUI.put(player.getUniqueId(), openedAuraGUI);

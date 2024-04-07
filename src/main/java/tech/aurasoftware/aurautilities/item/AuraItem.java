@@ -6,6 +6,7 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import tech.aurasoftware.aurautilities.configuration.serialization.Serializable;
 import tech.aurasoftware.aurautilities.util.Placeholder;
 import tech.aurasoftware.aurautilities.util.Text;
@@ -17,14 +18,17 @@ import java.util.List;
 public class AuraItem implements Serializable {
 
     private String material;
+
+    private String skullOwner;
     private String name;
-    private List<String> lore;
+    private List<String> lore = new ArrayList<>();
     private int amount = 1;
     private int data = 0;
+
     private boolean unbreakable = false;
     private boolean hideEnchants = false;
     private boolean hideAttributes = false;
-    private List<String> enchantments;
+    private List<String> enchantments = new ArrayList<>();
 
     public AuraItem(){
 
@@ -55,6 +59,10 @@ public class AuraItem implements Serializable {
         return this;
     }
 
+    public AuraItem skullOwner(String skullOwner){
+        this.skullOwner = skullOwner;
+        return this;
+    }
     public AuraItem unbreakable(boolean unbreakable){
         this.unbreakable = unbreakable;
         return this;
@@ -88,7 +96,20 @@ public class AuraItem implements Serializable {
             throw new IllegalArgumentException("Material not found");
         }
 
-        ItemStack itemStack = new ItemStack(bukkitMaterial, amount, (short) data);
+
+        ItemStack itemStack;
+
+        if(skullOwner != null && bukkitMaterial.equals(Material.PLAYER_HEAD)) {
+            itemStack = new ItemStack(bukkitMaterial, amount, (short) 3);
+
+            skullOwner = Placeholder.apply(skullOwner, placeholders);
+
+            SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
+            skullMeta.setOwner(skullOwner);
+            itemStack.setItemMeta(skullMeta);
+        }else{
+            itemStack = new ItemStack(bukkitMaterial, amount, (short) data);
+        }
 
         ItemMeta itemMeta = itemStack.getItemMeta();
 

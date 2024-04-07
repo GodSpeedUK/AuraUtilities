@@ -1,6 +1,7 @@
 package tech.aurasoftware.aurautilities.gui;
 
 import lombok.Getter;
+import tech.aurasoftware.aurautilities.gui.listener.AuraGUIMetaData;
 import tech.aurasoftware.aurautilities.item.AuraItem;
 
 import java.util.ArrayList;
@@ -11,9 +12,11 @@ import java.util.List;
 public class OpenedAuraGUI {
 
     private final AuraGUI auraGUI;
+    private final AuraGUIMetaData auraGUIMetaData;
 
-    public OpenedAuraGUI(AuraGUI auraGUI) {
+    public OpenedAuraGUI(AuraGUI auraGUI, AuraGUIMetaData auraGUIMetaData) {
         this.auraGUI = auraGUI;
+        this.auraGUIMetaData = auraGUIMetaData;
         this.additionalItems = new ArrayList<>();
     }
 
@@ -26,14 +29,18 @@ public class OpenedAuraGUI {
     public AuraGUIItem getAuraGUIItem(int slot){
 
         for(AuraGUIItem auraGUIItem : additionalItems){
-            if(auraGUIItem.getSlot() == slot){
-                return auraGUIItem;
+            for(int itemSlot: auraGUIItem.getSlots()){
+                if(itemSlot == slot){
+                    return auraGUIItem;
+                }
             }
         }
 
         for(AuraGUIItem auraGUIItem : auraGUI.getItems()){
-            if(auraGUIItem.getSlot() == slot){
-                return auraGUIItem;
+            for(int itemSlot: auraGUIItem.getSlots()){
+                if(itemSlot == slot){
+                    return auraGUIItem;
+                }
             }
         }
         return null;
