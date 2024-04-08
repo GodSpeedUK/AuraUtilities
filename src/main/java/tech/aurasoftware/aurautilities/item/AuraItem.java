@@ -1,6 +1,12 @@
 package tech.aurasoftware.aurautilities.item;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.mojang.authlib.properties.Property;
 import lombok.Builder;
+import lombok.SneakyThrows;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
@@ -11,8 +17,14 @@ import tech.aurasoftware.aurautilities.configuration.serialization.Serializable;
 import tech.aurasoftware.aurautilities.util.Placeholder;
 import tech.aurasoftware.aurautilities.util.Text;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 
 public class AuraItem implements Serializable {
@@ -30,96 +42,99 @@ public class AuraItem implements Serializable {
     private boolean hideAttributes = false;
     private List<String> enchantments = new ArrayList<>();
 
-    public AuraItem(){
+    public AuraItem() {
 
     }
 
-    public AuraItem material(String material){
+    public AuraItem material(String material) {
         this.material = material;
         return this;
     }
 
-    public AuraItem name(String name){
+    public AuraItem name(String name) {
         this.name = name;
         return this;
     }
 
-    public AuraItem lore(List<String> lore){
+    public AuraItem lore(List<String> lore) {
         this.lore = lore;
         return this;
     }
 
-    public AuraItem amount(int amount){
+    public AuraItem amount(int amount) {
         this.amount = amount;
         return this;
     }
 
-    public AuraItem data(int data){
+    public AuraItem data(int data) {
         this.data = data;
         return this;
     }
 
-    public AuraItem skullOwner(String skullOwner){
+    public AuraItem skullOwner(String skullOwner) {
         this.skullOwner = skullOwner;
         return this;
     }
-    public AuraItem unbreakable(boolean unbreakable){
+
+    public AuraItem unbreakable(boolean unbreakable) {
         this.unbreakable = unbreakable;
         return this;
     }
 
-    public AuraItem hideEnchants(boolean hideEnchants){
+    public AuraItem hideEnchants(boolean hideEnchants) {
         this.hideEnchants = hideEnchants;
         return this;
     }
 
-    public AuraItem hideAttributes(boolean hideAttributes){
+    public AuraItem hideAttributes(boolean hideAttributes) {
         this.hideAttributes = hideAttributes;
         return this;
     }
 
-    public AuraItem enchantments(List<String> enchantments){
+    public AuraItem enchantments(List<String> enchantments) {
         this.enchantments = enchantments;
         return this;
     }
 
 
-    public ItemStack toBukkitItem(Placeholder... placeholders){
+    public ItemStack toBukkitItem(Placeholder... placeholders) {
 
-        if(material == null){
+        if (material == null) {
             throw new IllegalArgumentException("Material cannot be null");
         }
 
         Material bukkitMaterial = Material.getMaterial(material.toUpperCase());
 
-        if(bukkitMaterial == null){
+        if (bukkitMaterial == null) {
             throw new IllegalArgumentException("Material not found");
         }
 
 
         ItemStack itemStack;
 
-        if(skullOwner != null && bukkitMaterial.equals(Material.PLAYER_HEAD)) {
-            itemStack = new ItemStack(bukkitMaterial, amount, (short) 3);
-
-            skullOwner = Placeholder.apply(skullOwner, placeholders);
-
-            SkullMeta skullMeta = (SkullMeta) itemStack.getItemMeta();
-            skullMeta.setOwner(skullOwner);
-            itemStack.setItemMeta(skullMeta);
-        }else{
+        if (skullOwner != null && bukkitMaterial.equals(Material.PLAYER_HEAD)) {
+            itemStack = new ItemStack(bukkitMaterial, amount);
+            UUID playerUUID = Bukkit.getOfflinePlayer(Placeholder.apply(skullOwner, placeholders)).getUniqueId();
+            String propertyValue = getPlayerTextureProperty(playerUUID);
+            if(propertyValue != null) {
+                Bukkit.getUnsafe().modifyItemStack(itemStack,
+                        "{SkullOwner:{Id:\"" + playerUUID + "\",Properties:{textures:[{Value:\"" + propertyValue + "\"}]}}}");
+            }else{
+                System.out.println("Failed to get property for Player: " + playerUUID);
+            }
+        } else {
             itemStack = new ItemStack(bukkitMaterial, amount, (short) data);
         }
 
         ItemMeta itemMeta = itemStack.getItemMeta();
 
-        if(name != null){
+        if (name != null) {
             itemMeta.setDisplayName(Text.c(Placeholder.apply(name, placeholders)));
         }
 
-        if(lore != null){
+        if (lore != null) {
             List<String> loreModified = new ArrayList<>();
-            for(String loreLine : lore){
+            for (String loreLine : lore) {
                 loreModified.add(Text.c(Placeholder.apply(loreLine, placeholders)));
             }
             itemMeta.setLore(loreModified);
@@ -127,24 +142,24 @@ public class AuraItem implements Serializable {
 
         itemMeta.setUnbreakable(unbreakable);
 
-        if(enchantments != null){
-            for(String enchantment : enchantments){
+        if (enchantments != null) {
+            for (String enchantment : enchantments) {
                 String[] enchantmentSplit = enchantment.split(":");
-                if(enchantmentSplit.length != 2){
+                if (enchantmentSplit.length != 2) {
                     throw new IllegalArgumentException("Invalid enchantment format");
                 }
 
                 int level;
 
-                try{
+                try {
                     level = Integer.parseInt(enchantmentSplit[1]);
-                }catch (NumberFormatException e){
+                } catch (NumberFormatException e) {
                     throw new IllegalArgumentException("Invalid enchantment level");
                 }
 
                 Enchantment bukkitEnchantment = Enchantment.getByName(enchantmentSplit[0].toUpperCase());
 
-                if(bukkitEnchantment == null){
+                if (bukkitEnchantment == null) {
                     throw new IllegalArgumentException("Enchantment not found");
                 }
 
@@ -153,11 +168,11 @@ public class AuraItem implements Serializable {
             }
         }
 
-        if(hideEnchants){
+        if (hideEnchants) {
             itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         }
 
-        if(hideAttributes){
+        if (hideAttributes) {
             itemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         }
 
@@ -165,6 +180,43 @@ public class AuraItem implements Serializable {
         itemStack.setItemMeta(itemMeta);
 
         return itemStack;
+    }
+
+    private String getPlayerTextureProperty(UUID playerUUID) {
+        try {
+            URL url = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + playerUUID.toString() + "?unsigned=false");
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Content-Type", "application/json");
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            reader.close();
+
+            JsonParser parser = new JsonParser();
+            JsonElement element = parser.parse(response.toString());
+            JsonObject rootObject = element.getAsJsonObject();
+
+            JsonElement propertiesElement = rootObject.get("properties");
+            if (propertiesElement != null) {
+                for (JsonElement propertyElement : propertiesElement.getAsJsonArray()) {
+                    JsonObject propertyObject = propertyElement.getAsJsonObject();
+                    String name = propertyObject.get("name").getAsString();
+                    String value = propertyObject.get("value").getAsString();
+                    if (name.equals("textures")) {
+                        return value;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
 

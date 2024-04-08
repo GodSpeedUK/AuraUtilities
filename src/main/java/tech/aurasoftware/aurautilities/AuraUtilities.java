@@ -34,6 +34,7 @@ public final class AuraUtilities extends AuraPlugin {
                 new PlayerParameter(),
                 new StringParameter()
         );
+
         registerSerializables(TitleMessage.class, AuraItem.class, AuraGUIItem.class, AuraGUI.class);
         registerListener(new InventoryClickListener(), new InventoryCloseListener());
         Configuration.loadConfig(new YamlFile("messages.yml", this.getDataFolder().getAbsolutePath(), null, this), UtilityMessages.values());

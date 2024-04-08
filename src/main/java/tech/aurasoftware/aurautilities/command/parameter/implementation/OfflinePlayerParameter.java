@@ -27,7 +27,7 @@ public class OfflinePlayerParameter extends Parameter<OfflinePlayer> {
         if(input == null){
             return false;
         }
-        return parse(input).hasPlayedBefore();
+        return parse(input).hasPlayedBefore() || Bukkit.getPlayer(input) != null;
     }
 
     @Override
