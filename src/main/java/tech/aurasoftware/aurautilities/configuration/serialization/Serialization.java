@@ -114,11 +114,42 @@ public class Serialization {
                 }
             }
 
+            if(field.getType().isAssignableFrom(Map.class)){
+                Map<?, ?> mapField = (Map<?, ?>) field.get(obj);
+                if(mapField == null || mapField.isEmpty()){
+                    continue;
+                }
+
+                for(Object key: mapField.keySet()){
+                    Object value = mapField.get(key);
+                    if(PRIMATIVE_TYPES.contains(value.getClass().getName())){
+                        map.put(field.getName() + "." + key, value);
+                        continue;
+                    }
+
+                    if(CONFIG_MAP.contains(value.getClass())){
+                        Map<String, Object> serialized = Serialization.serialize(value);
+                        for(String serializedKey: serialized.keySet()){
+                            map.put(field.getName() + "." + key + "." + serializedKey, serialized.get(serializedKey));
+                        }
+                    }
+                }
+
+            }
+
         }
 
         return map;
     }
 
+    private static Class<?> findClass(String name){
+        for(Class<? extends Serializable> clazz: CONFIG_MAP){
+            if(clazz.getName().equals(name)){
+                return clazz;
+            }
+        }
+        return null;
+    }
     @SneakyThrows
     public static <T> T deserialize(Class<T> clazz, YamlConfiguration config, String key){
         T obj = clazz.newInstance();
@@ -135,10 +166,11 @@ public class Serialization {
                 }
                 continue;
             }
-            Class<?> fieldClass = Class.forName(field.getType().getName());
+            Class<?> fieldClazz = findClass(type);
+
             // Check if field is serializable
-            if(CONFIG_MAP.contains(fieldClass)){
-                field.set(obj, Serialization.deserialize(fieldClass, config, key + "." + field.getName()));
+            if(fieldClazz != null){
+                field.set(obj, Serialization.deserialize(fieldClazz, config, key + "." + field.getName()));
                 continue;
             }
 
@@ -152,10 +184,12 @@ public class Serialization {
                     continue;
                 }
 
-                if(CONFIG_MAP.contains(Class.forName(listType))){
+                Class<?> listClazz = findClass(listType);
+
+                if(listClazz != null){
                     List<Object> list = new ArrayList<>();
                     for(String listKey: config.getConfigurationSection(key + "." + field.getName()).getKeys(false)){
-                        list.add(Serialization.deserialize(Class.forName(listType), config, key + "." + field.getName() + "." + listKey));
+                        list.add(Serialization.deserialize(listClazz, config, key + "." + field.getName() + "." + listKey));
                     }
                     field.set(obj, list);
                     continue;
@@ -163,6 +197,29 @@ public class Serialization {
 
                 if(config.contains(key + "." + field.getName())){
                     field.set(obj, config.get(key + "." + field.getName()));
+                }
+
+            }
+
+            if(field.getType().isAssignableFrom(Map.class)){
+                String mapType = field.getGenericType().getTypeName().split("<")[1].split(",")[1].split(">")[0];
+                if(PRIMATIVE_TYPES.contains(mapType)){
+                    Map<Object, Object> map = new HashMap<>();
+                    for(String mapKey: config.getConfigurationSection(key + "." + field.getName()).getKeys(false)){
+                        map.put(mapKey, config.get(key + "." + field.getName() + "." + mapKey));
+                    }
+                    field.set(obj, map);
+                    continue;
+                }
+
+                Class<?> mapClazz = findClass(mapType);
+
+                if(mapClazz != null){
+                    Map<Object, Object> map = new HashMap<>();
+                    for(String mapKey: config.getConfigurationSection(key + "." + field.getName()).getKeys(false)){
+                        map.put(mapKey, Serialization.deserialize(mapClazz, config, key + "." + field.getName() + "." + mapKey));
+                    }
+                    field.set(obj, map);
                 }
 
             }

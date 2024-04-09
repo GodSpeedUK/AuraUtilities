@@ -99,6 +99,8 @@ public interface Configuration {
 
     }
 
+
+
     default List<String> getStringList() {
         return (List<String>) getValue();
     }
