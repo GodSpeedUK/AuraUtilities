@@ -149,32 +149,34 @@ public class SQLDatabase implements Serializable {
 
     public CompletableFuture<Void> updateMultiple(SQLQuery... sqlQueries){
         return CompletableFuture.supplyAsync(() -> {
-
-            Connection connection = getConnection();
-            try {
-                connection.setAutoCommit(false);
-                for(SQLQuery sqlQuery: sqlQueries){
-                    try(PreparedStatement statement = connection.prepareStatement(sqlQuery.getQuery())){
-                        for(int i = 0; i < sqlQuery.getValues().length; i++){
-                            statement.setObject(i + 1, sqlQuery.getValues()[i]);
-                        }
-                        statement.executeUpdate();
-                    }
-                }
-                connection.commit();
-                connection.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-                try {
-                    connection.rollback();
-                    connection.close();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-
+            updateMultipleSync(sqlQueries);
             return null;
         });
+    }
+
+    public void updateMultipleSync(SQLQuery... queries){
+        Connection connection = getConnection();
+        try {
+            connection.setAutoCommit(false);
+            for(SQLQuery sqlQuery: queries){
+                try(PreparedStatement statement = connection.prepareStatement(sqlQuery.getQuery())){
+                    for(int i = 0; i < sqlQuery.getValues().length; i++){
+                        statement.setObject(i + 1, sqlQuery.getValues()[i]);
+                    }
+                    statement.executeUpdate();
+                }
+            }
+            connection.commit();
+            connection.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            try {
+                connection.rollback();
+                connection.close();
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 
     public CompletableFuture<Void> update(String query, Object... values) {
