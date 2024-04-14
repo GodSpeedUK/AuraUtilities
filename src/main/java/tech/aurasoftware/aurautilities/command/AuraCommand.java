@@ -181,7 +181,7 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
                     return completions;
                 }
                 for (AuraSubCommand auraSubCommand : getAuraSubCommands()) {
-                    if (auraSubCommand.getName().equalsIgnoreCase(args[0]) || auraSubCommand.getAliases().contains(args[0])) {
+                    if (auraSubCommand.getName().equalsIgnoreCase(args[0]) || (auraSubCommand.getAliases() != null && auraSubCommand.getAliases().contains(args[0]))) {
                         completeFrom = auraSubCommand;
                         indexShift = 1;
                         break;
