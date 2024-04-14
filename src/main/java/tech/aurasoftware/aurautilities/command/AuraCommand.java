@@ -80,7 +80,7 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
         if (strings.length > 0) {
             if (!this.getAuraSubCommands().isEmpty()) {
                 for (AuraSubCommand auraSubCommand : this.getAuraSubCommands()) {
-                    if (auraSubCommand.getName().equalsIgnoreCase(strings[0]) || auraSubCommand.getAliases().contains(strings[0])) {
+                    if (auraSubCommand.getName().equalsIgnoreCase(strings[0]) || (auraSubCommand.getAliases() != null && auraSubCommand.getAliases().contains(strings[0]))) {
 
                         String[] passThroughArray;
 
@@ -112,15 +112,6 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
             permissionString = Placeholder.apply(permission, namePlaceholder);
         }
 
-        Method runMethod;
-
-        try {
-            runMethod = auraCommandFrame.getClass().getDeclaredMethod("run", CommandSender.class, String[].class);
-            runMethod.setAccessible(true);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
 
         if (permissionString != null && !commandSender.hasPermission(permissionString)) {
             UtilityMessages.NO_PERMISSION.send(commandSender);
