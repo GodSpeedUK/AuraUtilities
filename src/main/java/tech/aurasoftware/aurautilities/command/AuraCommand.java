@@ -39,7 +39,7 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
         this.auraSubCommands = new ArrayList<>();
         Constructor<?> constructor;
         try {
-            constructor = this.getClass().getConstructor();
+            constructor = this.getClass().getConstructors()[0];
         } catch (Exception e) {
             e.printStackTrace();
             return;
@@ -101,6 +101,17 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
     }
 
     public boolean processAnnotations(AuraCommandFrame auraCommandFrame, CommandSender commandSender, String[] strings) {
+
+        Placeholder namePlaceholder = new Placeholder("{name}", this.getName());
+
+        String usageString = Placeholder.apply(usage, namePlaceholder);
+
+        String permissionString = null;
+
+        if(auraCommandFrame.getPermission() != null){
+            permissionString = Placeholder.apply(permission, namePlaceholder);
+        }
+
         Method runMethod;
 
         try {
@@ -111,7 +122,7 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
             return false;
         }
 
-        if (this.permission != null && !commandSender.hasPermission(this.permission)) {
+        if (permissionString != null && !commandSender.hasPermission(permissionString)) {
             UtilityMessages.NO_PERMISSION.send(commandSender);
             return true;
         }
@@ -127,7 +138,7 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
             Class<?> parameterClass = parameters[i];
 
             if (strings.length <= i && !optional) {
-                UtilityMessages.INVALID_USAGE.send(commandSender, new Placeholder("{usage}", this.usage));
+                UtilityMessages.INVALID_USAGE.send(commandSender, new Placeholder("{usage}", usageString));
                 return true;
             }
 
@@ -140,7 +151,7 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
             Parameter<?> parameter = AuraUtilities.getInstance().getParameterManager().get(parameterClass);
 
             if(!parameter.isParsable(arg)){
-                UtilityMessages.INVALID_USAGE.send(commandSender, new Placeholder("{usage}", this.usage));
+                UtilityMessages.INVALID_USAGE.send(commandSender, new Placeholder("{usage}", usageString));
                 return true;
             }
 
@@ -163,7 +174,9 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
                 if (args.length == 1) {
                     for (AuraSubCommand auraSubCommand : getAuraSubCommands()) {
                         completions.add(auraSubCommand.getName());
-                        completions.addAll(auraSubCommand.getAliases());
+                        if(auraSubCommand.getAliases() != null){
+                            completions.addAll(auraSubCommand.getAliases());
+                        }
                     }
                     return completions;
                 }

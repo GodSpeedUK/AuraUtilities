@@ -29,7 +29,7 @@ public abstract class AuraSubCommand implements AuraCommandFrame{
         Constructor<?> constructor;
         this.name = name;
         try {
-            constructor = getClass().getConstructor();
+            constructor = getClass().getConstructors()[0];
         } catch (Exception e) {
             e.printStackTrace();
             return;

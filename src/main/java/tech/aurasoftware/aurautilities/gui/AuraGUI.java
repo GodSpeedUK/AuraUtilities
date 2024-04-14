@@ -42,7 +42,25 @@ public class AuraGUI implements Serializable, Cloneable {
         return this;
     }
 
+    public List<Integer> getFreeSlots(){
+        List<Integer> slots = new ArrayList<>();
+        for(int i = 0; i < size; i++){
+            AuraGUIItem guiItem = getDefaultAt(i);
+            if(guiItem == null){
+                slots.add(i);
+            }
+        }
+        return slots;
+    }
 
+    public AuraGUIItem getDefaultAt(int slot){
+        for(AuraGUIItem auraGUIItem : items){
+            if(auraGUIItem.getSlots().contains(slot)){
+                return auraGUIItem;
+            }
+        }
+        return null;
+    }
 
     @Override
     public AuraGUI clone() {

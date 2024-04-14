@@ -203,6 +203,7 @@ public class Serialization {
 
             if(field.getType().isAssignableFrom(Map.class)){
                 String mapType = field.getGenericType().getTypeName().split("<")[1].split(",")[1].split(">")[0];
+                mapType = mapType.replace(" ", "");
                 if(PRIMATIVE_TYPES.contains(mapType)){
                     Map<Object, Object> map = new HashMap<>();
                     for(String mapKey: config.getConfigurationSection(key + "." + field.getName()).getKeys(false)){

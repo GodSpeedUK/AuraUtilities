@@ -15,6 +15,7 @@ public interface AuraCommandFrame {
 
     Class<?>[] getParameters();
 
+    String getPermission();
 
     boolean[] getOptional();
 
