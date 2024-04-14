@@ -17,6 +17,10 @@ public interface AuraCommandFrame {
 
     String getPermission();
 
+    String getUsage();
+
+    boolean isRequiresPlayer();
+
     boolean[] getOptional();
 
     boolean run(CommandSender commandSender, String[] args);

@@ -104,7 +104,7 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
 
         Placeholder namePlaceholder = new Placeholder("{name}", this.getName());
 
-        String usageString = Placeholder.apply(usage, namePlaceholder);
+        String usageString = Placeholder.apply(auraCommandFrame.getUsage(), namePlaceholder);
 
         String permissionString = null;
 
@@ -127,15 +127,15 @@ public abstract class AuraCommand extends Command implements AuraCommandFrame {
             return true;
         }
 
-        if (this.requiresPlayer && !(commandSender instanceof Player)) {
+        if (auraCommandFrame.isRequiresPlayer() && !(commandSender instanceof Player)) {
             UtilityMessages.INVALID_SENDER.send(commandSender);
             return true;
         }
 
-        for (int i = 0; i < parameters.length; i++) {
+        for (int i = 0; i < auraCommandFrame.getParameters().length; i++) {
 
-            boolean optional = this.optional[i];
-            Class<?> parameterClass = parameters[i];
+            boolean optional = auraCommandFrame.getOptional()[i];
+            Class<?> parameterClass = auraCommandFrame.getParameters()[i];
 
             if (strings.length <= i && !optional) {
                 UtilityMessages.INVALID_USAGE.send(commandSender, new Placeholder("{usage}", usageString));
