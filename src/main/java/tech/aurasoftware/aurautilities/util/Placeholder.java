@@ -2,13 +2,38 @@ package tech.aurasoftware.aurautilities.util;
 
 import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
+import java.util.List;
+
+
 public class Placeholder {
 
-    private final String key, value;
+    private String key, value;
+
+    private List<String> values;
+
+    public Placeholder(String key, String value){
+        this.key = key;
+        this.value = value;
+    }
+
+    public Placeholder(String key, List<String> values){
+        this.key = key;
+        this.values = values;
+    }
 
     public String apply(String message){
-        return message.replace(key, value);
+
+        if(value != null) {
+            return message.replace(key, value);
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for(String value : values) {
+            stringBuilder.append(message.replace(key, value)).append("\n");
+        }
+
+        return stringBuilder.toString();
     }
 
     public static String apply(String message, Placeholder... placeholders){
