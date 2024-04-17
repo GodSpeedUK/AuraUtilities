@@ -143,6 +143,17 @@ public class AuraItem implements Serializable {
         if (lore != null) {
             List<String> loreModified = new ArrayList<>();
             for (String loreLine : lore) {
+
+                String placeholdersApplied = Placeholder.apply(loreLine, placeholders);
+                // check for line break
+                if(placeholdersApplied.contains(System.lineSeparator())){
+                    String[] loreLines = placeholdersApplied.split(System.lineSeparator());
+                    for(String line : loreLines){
+                        loreModified.add(Text.c(line));
+                    }
+                    continue;
+                }
+
                 loreModified.add(Text.c(Placeholder.apply(loreLine, placeholders)));
             }
             itemMeta.setLore(loreModified);

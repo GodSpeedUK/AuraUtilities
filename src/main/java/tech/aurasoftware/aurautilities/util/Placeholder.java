@@ -27,11 +27,17 @@ public class Placeholder {
             return message.replace(key, value);
         }
 
+        if(!message.contains(key)){
+            return message;
+        }
+
         StringBuilder stringBuilder = new StringBuilder();
 
         for(String value : values) {
-            stringBuilder.append(message.replace(key, value)).append("\n");
+            stringBuilder.append(message.replace(key, value)).append(System.lineSeparator());
         }
+
+        System.out.println(stringBuilder.toString());
 
         return stringBuilder.toString();
     }
