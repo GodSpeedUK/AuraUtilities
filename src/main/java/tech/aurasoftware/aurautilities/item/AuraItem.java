@@ -43,6 +43,7 @@ public class AuraItem implements Serializable {
     private boolean hideEnchants = false;
     private boolean hideAttributes = false;
     private List<String> enchantments = new ArrayList<>();
+    private boolean hideUnbreakable = false;
 
     public AuraItem() {
 
@@ -95,6 +96,11 @@ public class AuraItem implements Serializable {
 
     public AuraItem enchantments(List<String> enchantments) {
         this.enchantments = enchantments;
+        return this;
+    }
+
+    public AuraItem hideUnbreakable(boolean hideUnbreakable) {
+        this.hideUnbreakable = hideUnbreakable;
         return this;
     }
 
@@ -176,6 +182,10 @@ public class AuraItem implements Serializable {
 
         if (hideAttributes) {
             itemMeta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        }
+
+        if(hideUnbreakable){
+            itemMeta.addItemFlags(ItemFlag.HIDE_UNBREAKABLE);
         }
 
 
