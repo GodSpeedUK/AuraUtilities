@@ -1,5 +1,6 @@
 package tech.aurasoftware.aurautilities.sql;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,6 +18,10 @@ public class SQLRow {
 
     public SQLColumn getColumn(String columnId){
         return values.get(columnId);
+    }
+
+    public Collection<SQLColumn> getColumns(){
+        return values.values();
     }
 
 }
